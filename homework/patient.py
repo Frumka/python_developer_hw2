@@ -5,19 +5,19 @@ from homework.patient_logger import *
 CSV_LOG_NAME = 'patients.csv'
 
 
-class Document:
-    document_type: str
-    document_type = DocumentTypeDescriptor()
-
-    document_id: str
-    document_id = DocumentIdDescriptor()
-
-    def __init__(self, document_type, document_id):
-        self.success_logger = logging.getLogger("patient_success")
-        self.error_logger = logging.getLogger("patient_errors")
-
-        self.document_type = document_type
-        self.document_id = document_id
+# class Document:
+#     document_type: str
+#     document_type = DocumentTypeDescriptor()
+#
+#     document_id: str
+#     document_id = DocumentIdDescriptor()
+#
+#     def __init__(self, document_type, document_id):
+#         self.success_logger = logging.getLogger("patient_success")
+#         self.error_logger = logging.getLogger("patient_errors")
+#
+#         self.document_type = document_type
+#         self.document_id = document_id
 
 
 class Patient:
@@ -34,12 +34,10 @@ class Patient:
     phone = PhoneDescriptor()
 
     document_type: str
-    document_type = DocumentReadOnlyDescriptor()
+    document_type = DocumentTypeDescriptor()
 
     document_id: str
-    document_id = DocumentReadOnlyDescriptor()
-
-    __document: Document
+    document_id = DocumentIdDescriptor()
 
     def __init__(self, first_name, last_name, birth_date, phone, document_type, document_id):
         self.success_logger = logging.getLogger("patient_success")
@@ -49,15 +47,13 @@ class Patient:
         self.last_name = last_name
         self.birth_date = birth_date
         self.phone = phone
-        self.__document = Document(document_type, document_id)
+        self.document_type = document_type
+        self.document_id = document_id
+        self.success_logger.info("Patient {} successfully created".format(self.first_name + ' ' + self.last_name))
 
     @staticmethod
     def create(first_name, last_name, birth_date, phone, document_type, document_id):
         return Patient(first_name, last_name, birth_date, phone, document_type, document_id)
-
-    def update_document(self, document_type, document_id):
-        self.__document.document_type = document_type
-        self.__document.document_id = document_id
 
     def __str__(self):
         return ', '.join([self.first_name, self.last_name, self.birth_date, self.phone,
@@ -92,10 +88,12 @@ class Patient:
         success_handler.close()
         error_handler.close()
 
+
 class PatientCollection:
     def __init__(self, log_file):
         pass
 
     def limit(self, n):
         raise NotImplementedError()
+
 

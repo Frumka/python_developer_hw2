@@ -5,6 +5,11 @@ MIN_LENGTH_OF_PHONE_NUMBER = 11  # digits only, for 1-digit country codes
 MAX_LENGTH_OF_PHONE_NUMBER = 14  # digits only, for 4-digit country codes
 
 
+def log_update(self, instance, value):
+    full_name = instance.__dict__['first_name'] + ' ' + instance.__dict__['last_name']
+    instance.success_logger.info("{} updated to {} for patient {}".format(self.name, value, full_name))
+
+
 def sum_of_lens(iterable: Iterable):
     """Returns number of elements in 1/1.5/2 dim list"""
     return sum(map(lambda x: len(x) if isinstance(x, Sized) else 1, iterable))
@@ -27,7 +32,7 @@ class NameNoModifyDescriptor:
             # Не уверен, что так стоит работать с персональными данными, но для примера пусть будет
             message = "Tried modifying {} of patient: {}".format(self.name, str(instance))
             instance.error_logger.error(message)
-            raise ModifyError(message)
+            raise AttributeError(message)
 
         if not isinstance(value, str):
             message = "Argument {} is not an instance of str".format(value)
@@ -40,7 +45,6 @@ class NameNoModifyDescriptor:
             raise ValueError(message)
 
         instance.__dict__[self.name] = value.capitalize()
-        instance.success_logger.info("{} assigned as {}".format(self.name, instance.__dict__[self.name]))
 
 
 class DateDescriptor:
@@ -79,8 +83,12 @@ class DateDescriptor:
             instance.error_logger.error(message)
             raise ValueError(message)
 
+        write_to_log = self.name in instance.__dict__
+
         instance.__dict__[self.name] = value
-        instance.success_logger.info("{} assigned as {}".format(self.name, instance.__dict__[self.name]))
+
+        if write_to_log:
+            log_update(self, instance, value)
 
 
 class PhoneDescriptor:
@@ -88,7 +96,7 @@ class PhoneDescriptor:
     def is_phone_number(value: str):
         """Check if value contain number of digits from MIN_LENGTH_OF_PHONE_NUMBER to MAX_LENGTH_OF_PHONE_NUMBER"""
 
-        blocks_of_digits = re.findall(r"[1-9]+", str(value))
+        blocks_of_digits = re.findall(r"[0-9]+", str(value))
         number_of_digits = sum_of_lens(blocks_of_digits)
 
         return MIN_LENGTH_OF_PHONE_NUMBER <= number_of_digits <= MAX_LENGTH_OF_PHONE_NUMBER
@@ -97,7 +105,7 @@ class PhoneDescriptor:
     def cast_phone_to_format(value: str):
         """Cast value to format    <code> ddd ddd dd dd
         <code> - country code from 1 digit up to 4"""
-        value = re.sub(r"[\\ +._-]", "", value)
+        value = re.sub(r"[\\() +._-]", "", value)
 
         code_len = len(value) - 10
 
@@ -106,7 +114,7 @@ class PhoneDescriptor:
 
         return ' '.join([value[0: code_len], value[code_len: code_len + 3],
                          value[code_len + 3: code_len + 6], value[code_len + 6: code_len + 8],
-                         value[code_len + 8: code_len + 10], value[code_len + 10:]])
+                         value[code_len + 8: code_len + 10]])
 
     def __set_name__(self, owner, name):
         self.name = name
@@ -115,7 +123,7 @@ class PhoneDescriptor:
         return instance.__dict__[self.name]
 
     def __set__(self, instance, value):
-        if type(value) != str:
+        if not isinstance(value, str):
             message = "Argument {} is not an instance of str".format(value)
             instance.error_logger.error(message)
             raise TypeError(message)
@@ -125,8 +133,14 @@ class PhoneDescriptor:
             instance.error_logger.error(message)
             raise ValueError(message)
 
-        instance.__dict__[self.name] = self.cast_phone_to_format(value)
-        instance.success_logger.info("{} assigned as {}".format(self.name, instance.__dict__[self.name]))
+        value = self.cast_phone_to_format(value)
+
+        write_to_log = self.name in instance.__dict__
+
+        instance.__dict__[self.name] = value
+
+        if write_to_log:
+            log_update(self, instance, value)
 
 
 class DocumentReadOnlyDescriptor:
@@ -163,8 +177,12 @@ class DocumentTypeDescriptor:
             instance.error_logger.error(message)
             raise ValueError(message)
 
+        write_to_log = self.name in instance.__dict__
+
         instance.__dict__[self.name] = value
-        instance.success_logger.info("{} assigned as {}".format(self.name, instance.__dict__[self.name]))
+
+        if write_to_log:
+            log_update(self, instance, value)
 
 
 def all_digits_to_str(value):
@@ -219,6 +237,11 @@ class DocumentIdDescriptor:
         types_len = {"паспорт": 10, "загран": 9, "водительские права": 10}  # Все по тестам
         document_type = instance.__dict__['document_type']
 
+        if not isinstance(value, str):
+            message = "Argument {} is not an instance of str".format(value)
+            instance.error_logger.error(message)
+            raise TypeError(message)
+
         blocks_of_digits = re.findall(r"[0-9]+", str(value))
         number_of_digits = sum_of_lens(blocks_of_digits)
 
@@ -227,5 +250,11 @@ class DocumentIdDescriptor:
             instance.error_logger.error(message)
             raise ValueError(message)
 
-        instance.__dict__[self.name] = cast_to_document_type(value, document_type)
-        instance.success_logger.info("{} assigned as {}".format(self.name, instance.__dict__[self.name]))
+        value = cast_to_document_type(value, document_type)
+
+        write_to_log = self.name in instance.__dict__
+
+        instance.__dict__[self.name] = value
+
+        if write_to_log:
+            log_update(self, instance, value)

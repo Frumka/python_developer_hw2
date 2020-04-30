@@ -90,7 +90,7 @@ class Patient:
 
 
 class PatientCollection:
-    def __init__(self, log_file_path, limit = -1):
+    def __init__(self, log_file_path, limit=-1):
         self.path = log_file_path
         self.line_byte_number = 0
         self.count = limit
@@ -113,8 +113,3 @@ class PatientCollection:
     def limit(self, n):
         self.count = n
         return self.__iter__()
-
-
-x = PatientCollection("patients.csv")
-for i, e in enumerate(x):
-    print(i, e)

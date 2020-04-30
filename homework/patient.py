@@ -90,10 +90,31 @@ class Patient:
 
 
 class PatientCollection:
-    def __init__(self, log_file):
-        pass
+    def __init__(self, log_file_path, limit = -1):
+        self.path = log_file_path
+        self.line_byte_number = 0
+        self.count = limit
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        with open(self.path, 'r', encoding='utf-8') as patients_csv:
+            patients_csv.seek(self.line_byte_number)
+            data = patients_csv.readline()
+            self.line_byte_number = patients_csv.tell()
+
+        if not data or self.count == 0:
+            raise StopIteration
+
+        self.count -= 1
+        return Patient(*data.split(','))
 
     def limit(self, n):
-        raise NotImplementedError()
+        self.count = n
+        return self.__iter__()
 
 
+x = PatientCollection("patients.csv")
+for i, e in enumerate(x):
+    print(i, e)
